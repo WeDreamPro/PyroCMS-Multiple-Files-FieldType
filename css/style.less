@@ -1,0 +1,115 @@
+@import 'elements.less';
+
+@dropTargetColor: fadeout(gray, 60%);
+@fileColor: fadeout(black, 80%);
+@fileColorHover : fadein(@fileColor, 30%);
+
+.grayFilter(@c : 1){
+	-webkit-filter: grayscale(@c);
+	filter:gray;
+}
+
+.clearfix() {
+  *zoom: 1;
+  &:before,
+  &:after {
+    display: table;
+    content: "";
+    // Fixes Opera/contenteditable bug:
+    // http://nicolasgallagher.com/micro-clearfix-hack/#comment-36952
+    line-height: 0;
+  }
+  &:after {
+    clear: both;
+  }
+}
+
+#drop-target{
+
+	&.html5{
+		border: 2px dashed @dropTargetColor;
+		color: fadein(@dropTargetColor, 10%);
+		display: block;
+		padding: 2em 1em;
+		text-align: center;
+		cursor: pointer;
+		font-weight: bold;
+		margin: 1em 0;
+
+		.transition();
+
+		&.dragenter{
+			background-color: fadeout(cyan, 95%);
+			border-color: fadein(@dropTargetColor, 80%);
+			color: fadein(@dropTargetColor, 80%);
+			content : 'test';
+		}
+	}
+}
+
+#multiple-files-list{
+	margin: 2em 0 !important;
+	display: block; 
+
+	li {
+		.clearfix();
+		.transition();
+
+		border: 1px solid @fileColor;
+		padding: .5em;
+		
+		&:first-child{
+			border-bottom: none;
+		}
+
+		> div{
+			float: left;
+			margin-left: 1em;
+		}
+
+		.name {
+			a {
+				font-weight: bold;
+			}
+		}
+
+		.delete-file {
+			float: right;
+			display: none;
+			
+			a {
+				color: @fileColor;
+				&:hover{
+					color: @fileColorHover;
+				}
+			}
+		}
+		
+		.progress{
+			float: right;
+
+			.progress-bar{
+				width: 200px;
+				padding: .1em;
+				display: block;
+				border: 1px solid #000;
+
+				> .bar{
+					background: #0086c6;
+					display: block;
+					width: 0;
+					height: 10px;
+				}
+			}
+		}
+
+		&.load{
+			.delete-file{
+				display: block;
+			}
+			.progress{
+				display: none;
+			}
+		}
+	}
+}

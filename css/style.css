@@ -1,0 +1,83 @@
+#drop-target.html5 {
+  border: 2px dashed rgba(128, 128, 128, 0.4);
+  color: rgba(128, 128, 128, 0.5);
+  display: block;
+  padding: 2em 1em;
+  text-align: center;
+  cursor: pointer;
+  font-weight: bold;
+  margin: 1em 0;
+  -webkit-transition: all 0.2s ease-out;
+  -moz-transition: all 0.2s ease-out;
+  -o-transition: all 0.2s ease-out;
+  transition: all 0.2s ease-out;
+}
+#drop-target.html5.dragenter {
+  background-color: rgba(0, 255, 255, 0.050000000000000044);
+  border-color: #808080;
+  color: #808080;
+  content: 'test';
+}
+#multiple-files-list {
+  margin: 2em 0 !important;
+  display: block;
+}
+#multiple-files-list li {
+  *zoom: 1;
+  -webkit-transition: all 0.2s ease-out;
+  -moz-transition: all 0.2s ease-out;
+  -o-transition: all 0.2s ease-out;
+  transition: all 0.2s ease-out;
+  border: 1px solid rgba(0, 0, 0, 0.19999999999999996);
+  padding: .5em;
+}
+#multiple-files-list li:before,
+#multiple-files-list li:after {
+  display: table;
+  content: "";
+  line-height: 0;
+}
+#multiple-files-list li:after {
+  clear: both;
+}
+#multiple-files-list li:first-child {
+  border-bottom: none;
+}
+#multiple-files-list li > div {
+  float: left;
+  margin-left: 1em;
+}
+#multiple-files-list li .name a {
+  font-weight: bold;
+}
+#multiple-files-list li .delete-file {
+  float: right;
+  display: none;
+}
+#multiple-files-list li .delete-file a {
+  color: rgba(0, 0, 0, 0.19999999999999996);
+}
+#multiple-files-list li .delete-file a:hover {
+  color: rgba(0, 0, 0, 0.49999999999999994);
+}
+#multiple-files-list li .progress {
+  float: right;
+}
+#multiple-files-list li .progress .progress-bar {
+  width: 200px;
+  padding: .1em;
+  display: block;
+  border: 1px solid #000;
+}
+#multiple-files-list li .progress .progress-bar > .bar {
+  background: #0086c6;
+  display: block;
+  width: 0;
+  height: 10px;
+}
+#multiple-files-list li.load .delete-file {
+  display: block;
+}
+#multiple-files-list li.load .progress {
+  display: none;
+}
