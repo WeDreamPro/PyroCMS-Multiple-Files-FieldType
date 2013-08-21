@@ -16,9 +16,9 @@
     <li id="file-{{id}}" class="file-container {{#unless is_new}} load {{/unless}}">
         <div class="name">
             {{#if is_new}} 
-                {{name}} 
+            {{name}} 
             {{else}}
-                <a href="{{url}}" target="_blank">{{name}}</a>
+            <a href="{{url}}" target="_blank">{{name}}</a>
             {{/if}}
         </div>
         <div class="size">{{{bytesFormat size}}}</div>
@@ -65,11 +65,11 @@
             });
 
             var nativeFiles = {},
-                isHTML5 = false,
-                $file_template = Handlebars.compile($('#file-template').html()),
-                $files_list = $('#multiple-files-list'),
-                entry_is_new = <?= json_encode($is_new) ?>,
-                files = <?= json_encode($files) ?>;
+            isHTML5 = false,
+            $file_template = Handlebars.compile($('#file-template').html()),
+            $files_list = $('#multiple-files-list'),
+            entry_is_new = <?= json_encode($is_new) ?>,
+            files = <?= json_encode($files) ?>;
 
             uploader.bind('PostInit', function() {
                 isHTML5 = uploader.runtime === "html5";
@@ -107,7 +107,7 @@
             });
 
             uploader.bind('Init', function(up, params) {
-                console.log("Current runtime: " + params.runtime);
+            
             });
 
             uploader.init();
@@ -143,13 +143,17 @@
             });
 
             uploader.bind('FileUploaded', function(up, file, info) {
-                var response = JSON.parse(info.response),
-                    anchor = $('<a />', {
-                    href: response.data.path.replace("{{ url:site }}", SITE_URL)
-                });
-                $file(file.id).addClass('load').find('.file-input').val(response.data.id);
-                $file(file.id).find('.name').wrapInner(anchor);
-
+                var response = JSON.parse(info.response);
+                if(response.status == false){
+                    $('<div class="alert error" style="margin-top: 1em;"><p><?= lang('streams:multiple_files.adding_error') ?></p></div>').insertAfter('#upload-container');
+                    up.refresh();
+                }else{
+                    var anchor = $('<a />', {
+                        href: response.data.path.replace("{{ url:site }}", SITE_URL)
+                    });
+                    $file(file.id).addClass('load').find('.file-input').val(response.data.id);
+                    $file(file.id).find('.name').wrapInner(anchor);
+                }
                 /* Off: Prevent close while upload */
                 $(window).off('beforeunload');
             });
@@ -175,8 +179,8 @@
 
             $(document).on('click', '.delete-file a', function(e) {
                 var $this = $(this),
-                    $parent = $this.parents('.file-container'),
-                    file_id = $parent.find('input.file-input').val();
+                $parent = $this.parents('.file-container'),
+                file_id = $parent.find('input.file-input').val();
 
                 if (confirm(pyro.lang.dialog_message)) {
                     $.post(SITE_URL + 'admin/files/delete_file', {file_id: file_id}, function(json) {
