@@ -12,8 +12,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class Field_multiple_files {
 
     public $field_type_slug = 'multiple_files';
-    public $db_col_type = false;
-    public $custom_parameters = array('folder', 'upload_url', 'table_name', 'resource_id_column', 'file_id_column', 'max_limit_files', 'allowed_types');
+    public $db_col_type = 'text';
+    public $custom_parameters = array('folder', 'upload_url', 'create_table', 'new_table_name', 'table_name', 'resource_id_column', 'file_id_column', 'max_limit_files', 'allowed_types');
     public $version = '1.1.0';
     public $author = array('name' => 'Rigo B Castro', 'url' => 'http://rigobcastro.com');
 
@@ -45,10 +45,11 @@ class Field_multiple_files {
      */
     public function form_output($data, $entry_id, $field)
     {
-        if(is_null($entry_id)){
+        if (is_null($entry_id))
+        {
             return 'Puede subir múltiples archivos en el modo edición.';
         }
-        
+
         $this->_clean_files($field);
 
         $upload_url = site_url('admin/files/upload');
@@ -71,7 +72,7 @@ class Field_multiple_files {
             $this->CI->db->join('files as F', "F.id = {$table_data->table}.{$table_data->file_id_column}");
 
             $files = $this->CI->db->get_where($table_data->table, array(
-                    $table_data->resource_id_column => $entry_id
+                    $this->CI->db->dbprefix($table_data->table) .'.'. $table_data->resource_id_column => $entry_id
                 ))->result();
 
             if (!empty($files))
@@ -125,7 +126,7 @@ class Field_multiple_files {
                 foreach ($images as $file_id)
                 {
                     $check = !empty($max_limit_images) ? $count <= $max_limit_images : true;
-                    
+
                     if ($check)
                     {
                         if (!$this->CI->db->insert($table, array(
@@ -137,7 +138,7 @@ class Field_multiple_files {
                             return false;
                         }
                     }
-                    
+
                     $count++;
                 }
             }
@@ -265,13 +266,185 @@ class Field_multiple_files {
 
     // ----------------------------------------------------------------------
 
+    /**
+     * Choose a folder to upload to.
+     *
+     * @access	public
+     * @param	[string - value]
+     * @return	string
+     */
+    public function param_folder($value = null)
+    {
+        // Get the folders
+        $this->CI->load->model('files/file_folders_m');
+
+        $tree = $this->CI->file_folders_m->get_folders();
+
+        $tree = (array) $tree;
+
+        if (!$tree)
+        {
+            return '<em>' . lang('streams:file.folder_notice') . '</em>';
+        }
+
+        $choices = array();
+
+        foreach ($tree as $tree_item)
+        {
+            // We are doing this to be backwards compat
+            // with PyroStreams 1.1 and below where
+            // This is an array, not an object
+            $tree_item = (object) $tree_item;
+
+            $choices[$tree_item->id] = $tree_item->name;
+        }
+
+        return form_dropdown('folder', $choices, $value);
+    }
+
+    // --------------------------------------------------------------------------
+
+    public function param_upload_url($value = null)
+    {
+        return form_input(array(
+            'name' => 'upload_url',
+            'value' => !empty($value) ? $value : site_url('admin/files/upload'),
+            'type' => 'text'
+        ));
+    }
+
+    // --------------------------------------------------------------------------
+
+    public function param_create_table($value = null)
+    {
+        $options = array(
+            0 => lang('global:no'),
+            1 => lang('global:yes'),
+        );
+
+        $input = form_dropdown('create_table', $options, $value);
+
+        return array(
+            'input' => $input,
+            'instructions' => $this->CI->lang->line('streams:multiple_files.instructions_create_table')
+        );
+    }
+
+    // --------------------------------------------------------------------------
+
+    public function param_new_table_name($value = null)
+    {
+        $input = form_input(array(
+            'name' => 'new_table_name',
+            'value' => $value,
+            'type' => 'text'
+        ));
+
+        return array(
+            'input' => $input,
+            'instructions' => $this->CI->lang->line('streams:multiple_files.instructions_new_table_name')
+        );
+    }
+
+    // --------------------------------------------------------------------------
+
+    public function param_table_name($value = null)
+    {
+        $tables = get_instance()->db->list_tables(true);
+        $tables_dropdown = array(
+            '' => '-----'
+        );
+
+        foreach ($tables as $table)
+        {
+            $prefix = explode('_', $table);
+            if ($prefix[0] !== 'core')
+            {
+                $tables_dropdown[$table] = $table;
+            }
+        }
+
+        return array(
+            'input' => form_dropdown('choice_table_name', $tables_dropdown, $value),
+            'instructions' => $this->CI->lang->line('streams:multiple_files.instructions_table_name')
+        );
+    }
+
+    /**
+     * Data for choice. In x : X format or just X format
+     *
+     * @access	public
+     * @param	[string - value]
+     * @return	string
+     */
+    public function param_resource_id_column($value = null)
+    {
+
+        return form_input(array(
+            'name' => 'resource_id_column',
+            'value' => !empty($value) ? $value : 'resource_id',
+            'type' => 'text'
+        ));
+    }
+
+    // --------------------------------------------------------------------------
+
+    /**
+     * Data for choice. In x : X format or just X format
+     *
+     * @access	public
+     * @param	[string - value]
+     * @return	string
+     */
+    public function param_file_id_column($value = null)
+    {
+
+        return form_input(array(
+            'name' => 'file_id_column',
+            'value' => !empty($value) ? $value : 'file_id',
+            'type' => 'text'
+        ));
+    }
+
+    // --------------------------------------------------------------------------
+
+
+    public function param_max_limit_files($value = null)
+    {
+        return form_input(array(
+            'name' => 'max_limit_files',
+            'value' => !empty($value) ? $value : 5,
+            'type' => 'text'
+        ));
+    }
+
+    // --------------------------------------------------------------------------
+
     private function _table_data($field)
     {
-        return (object) array(
+        $object = (object) array(
                 'table' => (!empty($field->field_data['table_name']) ? $field->field_data['table_name'] : "{$field->stream_slug}_{$field->field_slug}"),
                 'resource_id_column' => $field->field_data['resource_id_column'],
                 'file_id_column' => (!empty($field->field_data['file_id_column']) ? $field->field_data['file_id_column'] : 'file_id')
         );
+
+        if ($field->field_data['create_table'] && !empty($field->field_data['new_table_name']))
+        {
+            $table_name = $field->field_data['new_table_name'];
+            
+            
+            $fields[$field->field_data['resource_id_column']] = array('type' => 'INT', 'constraint' => 11, 'null' => false);
+            $fields[$field->field_data['file_id_column']] = array('type' => 'VARCHAR', 'constraint' => 200, 'null' => false);
+            
+            $ci = get_instance();
+            
+            $ci->dbforge->add_field($fields);
+            $ci->dbforge->create_table($table_name, true);
+            
+            $object->table = $table_name;
+        }
+        
+        return $object;
     }
 
     // ----------------------------------------------------------------------
