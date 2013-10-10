@@ -12,7 +12,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class Field_multiple_files {
 
     public $field_type_slug = 'multiple_files';
-    public $db_col_type = 'text';
+    public $db_col_type = false;
     public $custom_parameters = array('folder', 'upload_url', 'create_table', 'new_table_name', 'table_name', 'resource_id_column', 'file_id_column', 'max_limit_files', 'allowed_types');
     public $version = '1.1.0';
     public $author = array('name' => 'Rigo B Castro', 'url' => 'http://rigobcastro.com');
@@ -72,7 +72,7 @@ class Field_multiple_files {
             $this->CI->db->join('files as F', "F.id = {$table_data->table}.{$table_data->file_id_column}");
 
             $files = $this->CI->db->get_where($table_data->table, array(
-                    $this->CI->db->dbprefix($table_data->table) .'.'. $table_data->resource_id_column => $entry_id
+                    $this->CI->db->dbprefix($table_data->table) . '.' . $table_data->resource_id_column => $entry_id
                 ))->result();
 
             if (!empty($files))
@@ -94,6 +94,24 @@ class Field_multiple_files {
 
 
         return $this->CI->type->load_view('multiple_files', 'plupload_js', $data);
+    }
+
+    // --------------------------------------------------------------------------
+
+    /**
+     * User Field Type Query Build Hook
+     *
+     * This joins our user fields.
+     *
+     * @access 	public
+     * @param 	array 	&$sql 	The sql array to add to.
+     * @param 	obj 	$field 	The field obj
+     * @param 	obj 	$stream The stream object
+     * @return 	void
+     */
+    public function query_build_hook(&$sql, $field, $stream)
+    {
+        $sql['select'][] = $this->CI->db->protect_identifiers($stream->stream_prefix . $stream->stream_slug . '.id', true) . "as `" . $field->field_slug . "||{$field->field_data['resource_id_column']}`";
     }
 
     // --------------------------------------------------------------------------
@@ -156,8 +174,6 @@ class Field_multiple_files {
         }
     }
 
-    // --------------------------------------------------------------------------
-
     /**
      * Pre Ouput
      *
@@ -172,8 +188,10 @@ class Field_multiple_files {
      */
     public function pre_output($input, $data)
     {
+
         if (!$input)
             return null;
+
 
         $stream = $this->CI->streams_m->get_stream($data['choose_stream']);
 
@@ -238,30 +256,64 @@ class Field_multiple_files {
      */
     public function pre_output_plugin($row, $custom)
     {
-        if (!$row)
-            return null;
 
-        // Mini-cache for getting the related stream.
-        if (isset($this->cache[$custom['choose_stream']][$row]))
+        $table = $custom['field_data']['table_name'];
+
+        if (empty($table))
         {
-            return $this->cache[$custom['choose_stream']][$row];
+            $table = "{$custom['stream_slug']}_{$custom['field_slug']}";
         }
 
-        // Okay good to go
-        $stream = $this->CI->streams_m->get_stream($custom['choose_stream']);
+        $file_id_column = !empty($custom['field_data']['file_id']) ? $custom['field_data']['file_id'] : 'file_id';
 
-        // Do this gracefully
-        if (!$stream)
+
+        $files = $this->CI->db->where($custom['field_data']['resource_id_column'], (int) $row[$custom['field_data']['resource_id_column']])->get($table)->result_array();
+
+        $return = array();
+        if (!empty($files))
         {
-            return null;
+            $this->CI->load->library('files/files');
+
+            foreach ($files as &$_file)
+            {
+                $file_id = $_file[$file_id_column];
+                $file = Files::get_file($file_id);
+                $file_data = array();
+                if ($file['status'])
+                {
+                    $__file = $file['data'];
+
+                    // If we don't have a path variable, we must have an
+                    // older style image, so let's create a local file path.
+                    if (!$__file->path)
+                    {
+                        $file_data['url'] = base_url($this->CI->config->item('files:path') . $__file->filename);
+                    }
+                    else
+                    {
+                        $file_data['url'] = str_replace('{{ url:site }}', base_url(), $__file->path);
+                    }
+
+                    $file_data['filename'] = $__file->filename;
+                    $file_data['name'] = $__file->name;
+                    $file_data['description'] = $__file->description;
+                    $file_data['ext'] = $__file->extension;
+                    $file_data['mimetype'] = $__file->mimetype;
+                    $file_data['id'] = $__file->id;
+                    $file_data['filesize'] = $__file->filesize;
+                    $file_data['download_count'] = $__file->download_count;
+                    $file_data['date_added'] = $__file->date_added;
+                    $file_data['folder_id'] = $__file->folder_id;
+                    $file_data['folder_name'] = $__file->folder_name;
+                    $file_data['folder_slug'] = $__file->folder_slug;
+                }
+
+                $return[] = $file_data;
+            }
         }
 
-        $stream_fields = $this->CI->streams_m->get_stream_fields($stream->id);
 
-        // We should do something with this in the future.
-        $disable = array();
-
-        return $this->CI->row_m->format_row($row, $stream_fields, $stream, false, true, $disable);
+        return $return;
     }
 
     // ----------------------------------------------------------------------
@@ -278,9 +330,7 @@ class Field_multiple_files {
         // Get the folders
         $this->CI->load->model('files/file_folders_m');
 
-        $tree = $this->CI->file_folders_m->get_folders();
-
-        $tree = (array) $tree;
+        $tree = (array) $this->CI->file_folders_m->get_folders();
 
         if (!$tree)
         {
@@ -398,7 +448,6 @@ class Field_multiple_files {
      */
     public function param_file_id_column($value = null)
     {
-
         return form_input(array(
             'name' => 'file_id_column',
             'value' => !empty($value) ? $value : 'file_id',
@@ -431,19 +480,19 @@ class Field_multiple_files {
         if ($field->field_data['create_table'] && !empty($field->field_data['new_table_name']))
         {
             $table_name = $field->field_data['new_table_name'];
-            
-            
+
+
             $fields[$field->field_data['resource_id_column']] = array('type' => 'INT', 'constraint' => 11, 'null' => false);
             $fields[$field->field_data['file_id_column']] = array('type' => 'VARCHAR', 'constraint' => 200, 'null' => false);
-            
+
             $ci = get_instance();
-            
+
             $ci->dbforge->add_field($fields);
             $ci->dbforge->create_table($table_name, true);
-            
+
             $object->table = $table_name;
         }
-        
+
         return $object;
     }
 
