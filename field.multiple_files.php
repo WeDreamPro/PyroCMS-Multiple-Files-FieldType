@@ -116,19 +116,19 @@ class Field_multiple_files {
 
     // --------------------------------------------------------------------------
 
-    public function pre_save($images, $field, $stream, $row_id, $data_form)
+    public function pre_save($files, $field, $stream, $row_id, $data_form)
     {
         $table_data = $this->_table_data($field);
         $table = $table_data->table;
         $resource_id_column = $table_data->resource_id_column;
         $file_id_column = $table_data->file_id_column;
-        $max_limit_images = (int) $field->field_data['max_limit_images'];
-
-        if (!empty($max_limit_images))
+        $max_limit_files = (int) $field->field_data['max_limit_files'];
+        
+        if (!empty($max_limit_files))
         {
-            if (count($images) > $max_limit_images)
+            if (count($files) > $max_limit_files)
             {
-                $this->CI->session->set_flashdata('notice', sprintf(lang('streams:multiple_files.max_limit_error'), $max_limit_images));
+                $this->CI->session->set_flashdata('notice', sprintf(lang('streams:multiple_files.max_limit_error'), $max_limit_files));
             }
         }
 
@@ -137,13 +137,14 @@ class Field_multiple_files {
             $this->CI->db->trans_begin();
 
             // Reset
-            if ($this->CI->db->delete($table, array($resource_id_column, $row_id)))
+            if ($this->CI->db->delete($table, array($resource_id_column => (int) $row_id)))
             {
+               
                 $count = 1;
-                // Insert new images
-                foreach ($images as $file_id)
+                // Insert new files
+                foreach ($files as $file_id)
                 {
-                    $check = !empty($max_limit_images) ? $count <= $max_limit_images : true;
+                    $check = !empty($max_limit_files) ? $count <= $max_limit_files : true;
 
                     if ($check)
                     {
