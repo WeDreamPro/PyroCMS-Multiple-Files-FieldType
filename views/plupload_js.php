@@ -14,23 +14,23 @@
 
 <script id="file-template" type="text/x-handlebars-template">
     <li id="file-{{id}}" class="file-container {{#unless is_new}} load {{/unless}}">
-        <div class="name">
-            {{#if is_new}} 
-            {{name}} 
-            {{else}}
-            <a href="{{url}}" target="_blank">{{name}}</a>
-            {{/if}}
-        </div>
-        <div class="size">{{{bytesFormat size}}}</div>
-        <div class="progress">
-            <div class="progress-bar">
-                <div class="bar"></div>
-            </div>
-        </div>
-        <div class="delete-file">
-            <a href="#"><i class="icon-remove"></i></a>
-        </div>
-        <input class="file-input" type="hidden" name="files[]" value="{{id}}" />
+    <div class="name">
+    {{#if is_new}} 
+    {{name}} 
+    {{else}}
+    <a href="{{url}}" target="_blank">{{name}}</a>
+    {{/if}}
+    </div>
+    <div class="size">{{{bytesFormat size}}}</div>
+    <div class="progress">
+    <div class="progress-bar">
+    <div class="bar"></div>
+    </div>
+    </div>
+    <div class="delete-file">
+    <a href="#"><i class="icon-remove"></i></a>
+    </div>
+    <input class="file-input" type="hidden" name="files[]" value="{{id}}" />
     </li>
 </script>
 
@@ -54,7 +54,7 @@
                 browse_button: 'drop-target',
                 drop_element: 'drop-target',
                 container: 'upload-container',
-                max_file_size: '10mb',
+                max_file_size: '<?= Settings::get('files_upload_limit') ?>mb',
                 url: <?= json_encode($upload_url) ?>,
                 flash_swf_url: '<?= $field_path ?>js/plupload.flash.swf',
                 silverlight_xap_url: '<?= $field_path ?>js/plupload.silverlight.xap',
@@ -65,11 +65,11 @@
             });
 
             var nativeFiles = {},
-            isHTML5 = false,
-            $file_template = Handlebars.compile($('#file-template').html()),
-            $files_list = $('#multiple-files-list'),
-            entry_is_new = <?= json_encode($is_new) ?>,
-            files = <?= json_encode($files) ?>;
+                isHTML5 = false,
+                $file_template = Handlebars.compile($('#file-template').html()),
+                $files_list = $('#multiple-files-list'),
+                entry_is_new = <?= json_encode($is_new) ?>,
+                files = <?= json_encode($files) ?>;
 
             uploader.bind('PostInit', function() {
                 isHTML5 = uploader.runtime === "html5";
@@ -107,7 +107,7 @@
             });
 
             uploader.bind('Init', function(up, params) {
-            
+
             });
 
             uploader.init();
@@ -133,21 +133,29 @@
 
                 /* Prevent close while upload */
                 $(window).on('beforeunload', function() {
-                    return 'Hay una subida en progreso...';
+                    return 'Hay una subida en progreso, si recarga o sale de la página podría interrumpir el proceso.';
                 });
             });
 
-            uploader.bind('Error', function(up, error) {
+            uploader.bind('Error', function(up) {
                 $('<div class="alert error" style="margin-top: 1em;"><p><?= lang('streams:multiple_files.adding_error') ?></p></div>').insertAfter('#upload-container');
                 up.refresh();
             });
 
             uploader.bind('FileUploaded', function(up, file, info) {
                 var response = JSON.parse(info.response);
-                if(response.status == false){
-                    $('<div class="alert error" style="margin-top: 1em;"><p><?= lang('streams:multiple_files.adding_error') ?></p></div>').insertAfter('#upload-container');
+                if (response.status === false) {
+                    /* Adding error message from uploader */
+                    $('<div class="alert error" style="margin-top: 1em;"><p>' + file.name + ':' + response.message + '</p></div>').insertAfter('#upload-container');
+                    /* Delete corrupt file from list */
+                    setTimeout(function() {
+                        $('#file-' + file.id).fadeOut('slow', function() {
+                            return $(this).remove();
+                        });
+                    }, 2000);
+
                     up.refresh();
-                }else{
+                } else {
                     var anchor = $('<a />', {
                         href: response.data.path.replace("{{ url:site }}", SITE_URL)
                     });
@@ -179,8 +187,8 @@
 
             $(document).on('click', '.delete-file a', function(e) {
                 var $this = $(this),
-                $parent = $this.parents('.file-container'),
-                file_id = $parent.find('input.file-input').val();
+                    $parent = $this.parents('.file-container'),
+                    file_id = $parent.find('input.file-input').val();
 
                 if (confirm(pyro.lang.dialog_message)) {
                     $.post(SITE_URL + 'admin/files/delete_file', {file_id: file_id}, function(json) {
