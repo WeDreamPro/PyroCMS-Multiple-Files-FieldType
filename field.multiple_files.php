@@ -26,8 +26,7 @@ class Field_multiple_files {
 
     // --------------------------------------------------------------------------
 
-    public function event()
-    {
+    public function event() {
         $this->CI->type->add_misc('<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">');
         $this->CI->type->add_misc('<script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>');
 
@@ -43,10 +42,8 @@ class Field_multiple_files {
      * @param	array
      * @return	string
      */
-    public function form_output($data, $entry_id, $field)
-    {
-        if (is_null($entry_id))
-        {
+    public function form_output($data, $entry_id, $field) {
+        if (is_null($entry_id)) {
             return 'Puede subir múltiples archivos en el modo edición.';
         }
 
@@ -64,21 +61,18 @@ class Field_multiple_files {
             'field_path' => $this->ft_path
         );
 
-        if (!empty($entry_id))
-        {
+        if (!empty($entry_id)) {
             $table_data = $this->_table_data($field);
             $files_out = array();
 
             $this->CI->db->join('files as F', "F.id = {$table_data->table}.{$table_data->file_id_column}");
 
             $files = $this->CI->db->get_where($table_data->table, array(
-                    $this->CI->db->dbprefix($table_data->table) . '.' . $table_data->resource_id_column => $entry_id
-                ))->result();
+                        $this->CI->db->dbprefix($table_data->table) . '.' . $table_data->resource_id_column => $entry_id
+                    ))->result();
 
-            if (!empty($files))
-            {
-                foreach ($files as $file)
-                {
+            if (!empty($files)) {
+                foreach ($files as $file) {
                     $files_out[] = array(
                         'id' => $file->{$table_data->file_id_column},
                         'name' => $file->name,
@@ -109,50 +103,41 @@ class Field_multiple_files {
      * @param 	obj 	$stream The stream object
      * @return 	void
      */
-    public function query_build_hook(&$sql, $field, $stream)
-    {
+    public function query_build_hook(&$sql, $field, $stream) {
         $sql['select'][] = $this->CI->db->protect_identifiers($stream->stream_prefix . $stream->stream_slug . '.id', true) . "as `" . $field->field_slug . "||{$field->field_data['resource_id_column']}`";
     }
 
     // --------------------------------------------------------------------------
 
-    public function pre_save($files, $field, $stream, $row_id, $data_form)
-    {
+    public function pre_save($files, $field, $stream, $row_id, $data_form) {
         $table_data = $this->_table_data($field);
         $table = $table_data->table;
         $resource_id_column = $table_data->resource_id_column;
         $file_id_column = $table_data->file_id_column;
         $max_limit_files = (int) $field->field_data['max_limit_files'];
-        
-        if (!empty($max_limit_files))
-        {
-            if (count($files) > $max_limit_files)
-            {
+
+        if (!empty($max_limit_files)) {
+            if (count($files) > $max_limit_files) {
                 $this->CI->session->set_flashdata('notice', sprintf(lang('streams:multiple_files.max_limit_error'), $max_limit_files));
             }
         }
 
-        if ($this->CI->db->table_exists($table))
-        {
+        if ($this->CI->db->table_exists($table)) {
             $this->CI->db->trans_begin();
 
             // Reset
-            if ($this->CI->db->delete($table, array($resource_id_column => (int) $row_id)))
-            {
-               
+            if ($this->CI->db->delete($table, array($resource_id_column => (int) $row_id))) {
+
                 $count = 1;
                 // Insert new files
-                foreach ($files as $file_id)
-                {
+                foreach ($files as $file_id) {
                     $check = !empty($max_limit_files) ? $count <= $max_limit_files : true;
 
-                    if ($check)
-                    {
+                    if ($check) {
                         if (!$this->CI->db->insert($table, array(
-                                $resource_id_column => $row_id,
-                                $file_id_column => $file_id
-                            )))
-                        {
+                                    $resource_id_column => $row_id,
+                                    $file_id_column => $file_id
+                                ))) {
                             $this->CI->session->set_flashdata('error', 'Error al guardar los archivos');
                             return false;
                         }
@@ -162,14 +147,11 @@ class Field_multiple_files {
                 }
             }
 
-            if ($this->CI->db->trans_status() === FALSE)
-            {
+            if ($this->CI->db->trans_status() === FALSE) {
                 $this->CI->db->trans_rollback();
                 $this->CI->session->set_flashdata('error', 'Error al guardar los archivos');
                 return false;
-            }
-            else
-            {
+            } else {
                 $this->CI->db->trans_commit();
             }
         }
@@ -187,8 +169,7 @@ class Field_multiple_files {
      * @param	array 	$input 	
      * @return	mixed 	null or string
      */
-    public function pre_output($input, $data)
-    {
+    public function pre_output($input, $data) {
 
         if (!$input)
             return null;
@@ -203,15 +184,13 @@ class Field_multiple_files {
         // -------------------------------------
         // Make sure the table exists still. If it was deleted we don't want to
         // have everything go to hell.
-        if (!$this->CI->db->table_exists($stream->stream_prefix . $stream->stream_slug))
-        {
+        if (!$this->CI->db->table_exists($stream->stream_prefix . $stream->stream_slug)) {
             return null;
         }
 
         // We need to make sure the select is NOT NULL.
         // So, if we have no title column, let's use the id
-        if (trim($title_column) == '')
-        {
+        if (trim($title_column) == '') {
             $title_column = 'id';
         }
 
@@ -220,24 +199,18 @@ class Field_multiple_files {
         // -------------------------------------
 
         $row = $this->CI->db
-            ->select()
-            ->where('id', $input)
-            ->get($stream->stream_prefix . $stream->stream_slug)
-            ->row_array();
+                ->select()
+                ->where('id', $input)
+                ->get($stream->stream_prefix . $stream->stream_slug)
+                ->row_array();
 
-        if ($this->CI->uri->segment(1) == 'admin')
-        {
-            if (isset($data['link_uri']) and !empty($data['link_uri']))
-            {
+        if ($this->CI->uri->segment(1) == 'admin') {
+            if (isset($data['link_uri']) and ! empty($data['link_uri'])) {
                 return '<a href="' . site_url(str_replace(array('-id-', '-stream-'), array($row['id'], $stream->stream_slug), $data['link_uri'])) . '">' . $row[$title_column] . '</a>';
-            }
-            else
-            {
+            } else {
                 return '<a href="' . site_url('admin/streams/entries/view/' . $stream->id . '/' . $row['id']) . '">' . $row[$title_column] . '</a>';
             }
-        }
-        else
-        {
+        } else {
             return $row;
         }
     }
@@ -255,13 +228,11 @@ class Field_multiple_files {
      * @param	array  	$custom 	custom field data
      * @param	mixed 	null or formatted array
      */
-    public function pre_output_plugin($row, $custom)
-    {
+    public function pre_output_plugin($row, $custom) {
 
         $table = $custom['field_data']['table_name'];
 
-        if (empty($table))
-        {
+        if (empty($table)) {
             $table = "{$custom['stream_slug']}_{$custom['field_slug']}";
         }
 
@@ -271,27 +242,21 @@ class Field_multiple_files {
         $files = $this->CI->db->where($custom['field_data']['resource_id_column'], (int) $row[$custom['field_data']['resource_id_column']])->get($table)->result_array();
 
         $return = array();
-        if (!empty($files))
-        {
+        if (!empty($files)) {
             $this->CI->load->library('files/files');
 
-            foreach ($files as &$_file)
-            {
+            foreach ($files as &$_file) {
                 $file_id = $_file[$file_id_column];
                 $file = Files::get_file($file_id);
                 $file_data = array();
-                if ($file['status'])
-                {
+                if ($file['status']) {
                     $__file = $file['data'];
 
                     // If we don't have a path variable, we must have an
                     // older style image, so let's create a local file path.
-                    if (!$__file->path)
-                    {
+                    if (!$__file->path) {
                         $file_data['url'] = base_url($this->CI->config->item('files:path') . $__file->filename);
-                    }
-                    else
-                    {
+                    } else {
                         $file_data['url'] = str_replace('{{ url:site }}', base_url(), $__file->path);
                     }
 
@@ -326,22 +291,19 @@ class Field_multiple_files {
      * @param	[string - value]
      * @return	string
      */
-    public function param_folder($value = null)
-    {
+    public function param_folder($value = null) {
         // Get the folders
         $this->CI->load->model('files/file_folders_m');
 
         $tree = (array) $this->CI->file_folders_m->get_folders();
 
-        if (!$tree)
-        {
+        if (!$tree) {
             return '<em>' . lang('streams:file.folder_notice') . '</em>';
         }
 
         $choices = array();
 
-        foreach ($tree as $tree_item)
-        {
+        foreach ($tree as $tree_item) {
             // We are doing this to be backwards compat
             // with PyroStreams 1.1 and below where
             // This is an array, not an object
@@ -355,8 +317,7 @@ class Field_multiple_files {
 
     // --------------------------------------------------------------------------
 
-    public function param_upload_url($value = null)
-    {
+    public function param_upload_url($value = null) {
         return form_input(array(
             'name' => 'upload_url',
             'value' => !empty($value) ? $value : site_url('admin/files/upload'),
@@ -366,8 +327,7 @@ class Field_multiple_files {
 
     // --------------------------------------------------------------------------
 
-    public function param_create_table($value = null)
-    {
+    public function param_create_table($value = null) {
         $options = array(
             0 => lang('global:no'),
             1 => lang('global:yes'),
@@ -383,8 +343,7 @@ class Field_multiple_files {
 
     // --------------------------------------------------------------------------
 
-    public function param_new_table_name($value = null)
-    {
+    public function param_new_table_name($value = null) {
         $input = form_input(array(
             'name' => 'new_table_name',
             'value' => $value,
@@ -399,18 +358,15 @@ class Field_multiple_files {
 
     // --------------------------------------------------------------------------
 
-    public function param_table_name($value = null)
-    {
+    public function param_table_name($value = null) {
         $tables = get_instance()->db->list_tables(true);
         $tables_dropdown = array(
             '' => '-----'
         );
 
-        foreach ($tables as $table)
-        {
+        foreach ($tables as $table) {
             $prefix = explode('_', $table);
-            if ($prefix[0] !== 'core')
-            {
+            if ($prefix[0] !== 'core') {
                 $tables_dropdown[$table] = $table;
             }
         }
@@ -428,8 +384,7 @@ class Field_multiple_files {
      * @param	[string - value]
      * @return	string
      */
-    public function param_resource_id_column($value = null)
-    {
+    public function param_resource_id_column($value = null) {
 
         return form_input(array(
             'name' => 'resource_id_column',
@@ -447,8 +402,7 @@ class Field_multiple_files {
      * @param	[string - value]
      * @return	string
      */
-    public function param_file_id_column($value = null)
-    {
+    public function param_file_id_column($value = null) {
         return form_input(array(
             'name' => 'file_id_column',
             'value' => !empty($value) ? $value : 'file_id',
@@ -459,8 +413,7 @@ class Field_multiple_files {
     // --------------------------------------------------------------------------
 
 
-    public function param_max_limit_files($value = null)
-    {
+    public function param_max_limit_files($value = null) {
         return form_input(array(
             'name' => 'max_limit_files',
             'value' => !empty($value) ? $value : 5,
@@ -470,16 +423,14 @@ class Field_multiple_files {
 
     // --------------------------------------------------------------------------
 
-    private function _table_data($field)
-    {
+    private function _table_data($field) {
         $object = (object) array(
-                'table' => (!empty($field->field_data['table_name']) ? $field->field_data['table_name'] : "{$field->stream_slug}_{$field->field_slug}"),
-                'resource_id_column' => $field->field_data['resource_id_column'],
-                'file_id_column' => (!empty($field->field_data['file_id_column']) ? $field->field_data['file_id_column'] : 'file_id')
+                    'table' => (!empty($field->field_data['table_name']) ? $field->field_data['table_name'] : "{$field->stream_slug}_{$field->field_slug}"),
+                    'resource_id_column' => $field->field_data['resource_id_column'],
+                    'file_id_column' => (!empty($field->field_data['file_id_column']) ? $field->field_data['file_id_column'] : 'file_id')
         );
 
-        if ($field->field_data['create_table'] && !empty($field->field_data['new_table_name']))
-        {
+        if ($field->field_data['create_table'] && !empty($field->field_data['new_table_name'])) {
             $table_name = $field->field_data['new_table_name'];
 
 
@@ -499,8 +450,7 @@ class Field_multiple_files {
 
     // ----------------------------------------------------------------------
 
-    private function _clean_files($field)
-    {
+    private function _clean_files($field) {
         $table_data = $this->_table_data($field);
 
         $content = Files::folder_contents($field->field_data['folder']);
@@ -508,20 +458,15 @@ class Field_multiple_files {
         $valid_files = $this->CI->db->select($table_data->file_id_column . ' as id')->from($table_data->table)->get()->result();
         $valid_files_ids = array();
 
-        if (!empty($valid_files))
-        {
-            foreach ($valid_files as $vf)
-            {
+        if (!empty($valid_files)) {
+            foreach ($valid_files as $vf) {
                 array_push($valid_files_ids, $vf->id);
             }
         }
 
-        if (!empty($files))
-        {
-            foreach ($files as $file)
-            {
-                if (!in_array($file->id, $valid_files_ids))
-                {
+        if (!empty($files)) {
+            foreach ($files as $file) {
+                if (!in_array($file->id, $valid_files_ids)) {
                     Files::delete_file($file->id);
                 }
             }
