@@ -432,17 +432,16 @@ class Field_multiple_files {
 
         if ($field->field_data['create_table'] && !empty($field->field_data['new_table_name'])) {
             $table_name = $field->field_data['new_table_name'];
-
-
-            $fields[$field->field_data['resource_id_column']] = array('type' => 'INT', 'constraint' => 11, 'null' => false);
-            $fields[$field->field_data['file_id_column']] = array('type' => 'VARCHAR', 'constraint' => 200, 'null' => false);
-
             $ci = get_instance();
+            if (!$ci->db->table_exists($table_name)) {
+                $fields[$field->field_data['resource_id_column']] = array('type' => 'INT', 'constraint' => 11, 'null' => false);
+                $fields[$field->field_data['file_id_column']] = array('type' => 'VARCHAR', 'constraint' => 200, 'null' => false);
 
-            $ci->dbforge->add_field($fields);
-            $ci->dbforge->create_table($table_name, true);
+                $ci->dbforge->add_field($fields);
+                $ci->dbforge->create_table($table_name, true);
 
-            $object->table = $table_name;
+                $object->table = $table_name;
+            }
         }
 
         return $object;
