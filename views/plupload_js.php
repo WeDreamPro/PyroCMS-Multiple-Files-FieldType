@@ -30,7 +30,7 @@
     <div class="delete-file">
     <a href="#"><i class="icon-remove"></i></a>
     </div>
-    <input class="file-input" type="hidden" name="files[]" value="{{id}}" />
+    <input class="file-input" type="hidden" name="<?php echo $field->field_slug ?>[]" value="{{id}}" />
     </li>
 </script>
 

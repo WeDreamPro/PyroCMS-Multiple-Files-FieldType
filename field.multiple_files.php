@@ -58,7 +58,8 @@ class Field_multiple_files {
             ),
             'upload_url' => $upload_url,
             'is_new' => empty($entry_id),
-            'field_path' => $this->ft_path
+            'field_path' => $this->ft_path,
+            'field' => $field
         );
 
         if (!empty($entry_id)) {
@@ -114,8 +115,7 @@ class Field_multiple_files {
         $table = $table_data->table;
         $resource_id_column = $table_data->resource_id_column;
         $file_id_column = $table_data->file_id_column;
-        $max_limit_files = (int) $field->field_data['max_limit_files'];
-
+        $max_limit_files = (int) $field->field_data['max_limit_files'];    
         if (!empty($max_limit_files)) {
             if (count($files) > $max_limit_files) {
                 $this->CI->session->set_flashdata('notice', sprintf(lang('streams:multiple_files.max_limit_error'), $max_limit_files));
